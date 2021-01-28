@@ -2,5 +2,10 @@
 
 export(check_update)
 export(download_gsfile)
+export(gsfile_exists)
+export(list_gsfile)
 export(read_gsfile)
+export(upload_gsfile)
+export(write_gsfile)
 importFrom(data.table,fread)
+importFrom(data.table,fwrite)

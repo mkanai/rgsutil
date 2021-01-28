@@ -10,7 +10,7 @@
 fread_wrapper = function(path, extra_pipe_cmd = NULL, ...) {
   is_bgz = tools::file_ext(path) == "bgz"
   if (!is_bgz & is.null(extra_pipe_cmd)) {
-    return(data.table::fread(path, data.table = F))
+    return(data.table::fread(path, data.table = F, ...))
   }
   cmd = sprintf("%s %s", ifelse(is_bgz, "gunzip -cd", "cat"), path)
   if (!is.null(extra_pipe_cmd)) {
