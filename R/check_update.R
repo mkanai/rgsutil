@@ -13,6 +13,9 @@ check_update = function(remote_path, local_path) {
   ),
   format = "%Y-%m-%dT%H:%M",
   tz = 'UTC')
+  if (is.null(remote_dt)) {
+    stop(paste("Remote file not found:", remote_path))
+  }
   local_dt = file.info(local_path)$ctime
   return(remote_dt > local_dt)
 }
