@@ -9,6 +9,7 @@
 fwrite_wrapper = function(x,
                           path,
                           sep = "\t",
+                          na = "NA",
                           ...) {
   dest_dir = dirname(path)
   if (!dir.exists(dest_dir)) {
@@ -23,6 +24,7 @@ fwrite_wrapper = function(x,
       quote = FALSE,
       row.names = FALSE,
       sep = sep,
+      na = na,
       ...
     ))
   }
@@ -34,6 +36,7 @@ fwrite_wrapper = function(x,
     quote = FALSE,
     row.names = FALSE,
     sep = sep,
+    na = na,
     ...
   )
 

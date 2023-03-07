@@ -4,7 +4,7 @@
 \alias{fwrite_wrapper}
 \title{Wrap data.table::fwrite for bgz or pipe}
 \usage{
-fwrite_wrapper(x, path, sep = "\\t", ...)
+fwrite_wrapper(x, path, sep = "\\t", na = "NA", ...)
 }
 \arguments{
 \item{x}{a data.frame to write}
