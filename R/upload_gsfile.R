@@ -6,7 +6,7 @@
 #' @export
 #'
 upload_gsfile = function(local_path, remote_path) {
-  cmd = sprintf("gsutil cp %s %s", local_path, remote_path)
+  cmd = sprintf("gcloud storage cp %s %s", local_path, remote_path)
   message(sprintf("Uploading to %s...", remote_path))
   message(cmd)
   ret = system(cmd)

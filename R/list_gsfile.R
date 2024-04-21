@@ -8,7 +8,7 @@
 list_gsfile = function(remote_path) {
   suppressWarnings({
     files = system(
-      paste("gsutil ls", remote_path),
+      paste("gcloud storage ls", remote_path),
       intern = TRUE,
       ignore.stderr = TRUE
     )

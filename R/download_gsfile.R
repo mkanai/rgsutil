@@ -9,7 +9,7 @@ download_gsfile = function(remote_path, dest_dir) {
   if (!dir.exists(dest_dir)) {
     dir.create(dest_dir, recursive = TRUE)
   }
-  cmd = sprintf("gsutil cp %s %s/", remote_path, dest_dir)
+  cmd = sprintf("gcloud storage cp %s %s/", remote_path, dest_dir)
   message(sprintf("Downloading %s...", remote_path))
   message(cmd)
   system(cmd)

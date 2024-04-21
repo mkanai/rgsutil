@@ -8,7 +8,7 @@
 #'
 check_update = function(remote_path, local_path) {
   remote_dt = as.POSIXct(system(
-    sprintf("gsutil ls -l %s | awk 'NR == 1{print $2}'", remote_path),
+    sprintf("gcloud storage ls -l %s | awk 'NR == 1{print $2}'", remote_path),
     intern = TRUE
   ),
   format = "%Y-%m-%dT%H:%M",
