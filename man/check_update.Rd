@@ -2,18 +2,46 @@
 % Please edit documentation in R/check_update.R
 \name{check_update}
 \alias{check_update}
-\title{Check whether a remote file is updated}
+\title{Check if a Google Cloud Storage file is newer than local cache}
 \usage{
 check_update(remote_path, local_path)
 }
 \arguments{
-\item{remote_path}{a remote path on Google Storage}
+\item{remote_path}{Character string. The Google Cloud Storage path to check,
+must start with "gs://".}
 
-\item{local_path}{a local path to check whether updated}
+\item{local_path}{Character string. The path to the local cached file to
+compare against.}
 }
 \value{
-whether the file is updated
+Logical. TRUE if the remote file is newer than the local file,
+  FALSE otherwise.
 }
 \description{
-Check whether a remote file is updated
+Compares the modification time of a file in Google Cloud Storage with
+a local cached version to determine if the remote file has been updated.
+}
+\details{
+This function retrieves the modification timestamp from Google Cloud Storage
+using \code{gcloud storage ls -l} and compares it with the local file's
+creation time. This is primarily used by \code{\link{read_gsfile}} to
+determine whether to use a cached version or download a fresh copy.
+}
+\note{
+The function will stop with an error if the remote file does not exist.
+The local file must exist for a meaningful comparison.
+}
+\examples{
+\dontrun{
+# Check if remote file has been updated
+if (check_update("gs://my-bucket/data/file.csv", "/tmp/my-bucket/data/file.csv")) {
+  message("Remote file is newer, should download")
+} else {
+  message("Local cache is up to date")
+}
+}
+
+}
+\seealso{
+\code{\link{read_gsfile}}
 }

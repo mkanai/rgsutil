@@ -2,19 +2,64 @@
 % Please edit documentation in R/fwrite_wrapper.R
 \name{fwrite_wrapper}
 \alias{fwrite_wrapper}
-\title{Wrap data.table::fwrite for bgz or pipe}
+\title{Enhanced file writer with BGZ compression support}
 \usage{
 fwrite_wrapper(x, path, sep = "\\t", na = "NA", ...)
 }
 \arguments{
-\item{x}{a data.frame to write}
+\item{x}{A data.frame or data.table to write.}
 
-\item{path}{a path to file}
+\item{path}{Character string. The path where the file should be written.
+If the path ends with .bgz, the file will be compressed using bgzip.}
 
-\item{sep}{an output separator}
+\item{sep}{Character string. Field separator. Defaults to "\\t" (tab).}
 
-\item{...}{extra parameters for data.table::fwrite}
+\item{na}{Character string. String to use for missing values. Defaults to "NA".}
+
+\item{...}{Additional arguments passed to \code{\link[data.table]{fwrite}}.}
+}
+\value{
+NULL (invisibly). The function is called for its side effect of
+  writing a file.
 }
 \description{
-Wrap data.table::fwrite for bgz or pipe
+A wrapper around \code{\link[data.table]{fwrite}} that automatically handles
+BGZ compression for genomics data files. Creates parent directories as needed.
+}
+\details{
+This function enhances data.table::fwrite by:
+\itemize{
+  \item Automatically creating parent directories if they don't exist
+  \item Supporting BGZ compression (commonly used in genomics) for .bgz files
+  \item Setting sensible defaults for genomics data (tab-separated, no quotes)
+}
+
+For BGZ files, the function:
+\enumerate{
+  \item Writes to a temporary file first
+  \item Compresses using bgzip
+  \item Removes the temporary file
+}
+}
+\note{
+BGZ compression requires the \code{bgzip} command to be available in the system PATH.
+This is typically installed with htslib or samtools.
+}
+\examples{
+\dontrun{
+# Write a regular TSV file
+df <- data.frame(chr = c("chr1", "chr2"), pos = c(100, 200))
+fwrite_wrapper(df, "output.tsv")
+
+# Write a BGZ compressed file for genomics data
+fwrite_wrapper(df, "output.tsv.bgz")
+
+# Write CSV format
+fwrite_wrapper(df, "output.csv", sep = ",")
+}
+
+}
+\seealso{
+\code{\link{write_gsfile}}, \code{\link[data.table]{fwrite}},
+  \code{\link{fread_wrapper}}
 }

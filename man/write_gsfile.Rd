@@ -2,7 +2,7 @@
 % Please edit documentation in R/write_gsfile.R
 \name{write_gsfile}
 \alias{write_gsfile}
-\title{Write a remote file on Google Storage}
+\title{Write a data frame to Google Cloud Storage}
 \usage{
 write_gsfile(
   x,
@@ -14,18 +14,59 @@ write_gsfile(
 )
 }
 \arguments{
-\item{x}{a data.frame to write}
+\item{x}{A data.frame or data.table to write.}
 
-\item{remote_path}{a remote path on Google Storage}
+\item{remote_path}{Character string. The destination Google Cloud Storage path
+starting with "gs://".}
 
-\item{sep}{an output separator}
+\item{sep}{Character string. Field separator for the output file.
+Defaults to "\\t" (tab).}
 
-\item{overwrite}{whether to overwrite an existing remote file}
+\item{overwrite}{Logical. Whether to overwrite an existing remote file.
+Defaults to FALSE for safety.}
 
-\item{cache.dir}{a directory for cache}
+\item{cache.dir}{Character string. Directory for temporary local files.
+Defaults to "/tmp".}
 
-\item{...}{extra parameters for data.table::fread}
+\item{...}{Additional arguments passed to \code{\link[data.table]{fwrite}}.}
+}
+\value{
+NULL (invisibly). The function is called for its side effect of
+  uploading a file to Google Cloud Storage.
 }
 \description{
-Write a remote file on Google Storage
+Writes a data frame to Google Cloud Storage by first writing to a temporary
+local file and then uploading it. Supports overwrite protection and various
+file formats.
+}
+\details{
+The function performs the following steps:
+\enumerate{
+  \item Checks if the remote file exists (unless overwrite = TRUE)
+  \item Writes the data to a temporary local file
+  \item Uploads the file to Google Cloud Storage
+  \item Removes the temporary local file
+}
+}
+\examples{
+\dontrun{
+# Write a data frame to Google Cloud Storage
+df <- data.frame(x = 1:10, y = letters[1:10])
+write_gsfile(df, "gs://my-bucket/data/output.tsv")
+
+# Write as CSV with overwrite
+write_gsfile(df, "gs://my-bucket/data/output.csv",
+  sep = ",", overwrite = TRUE
+)
+
+# Write with compression
+write_gsfile(df, "gs://my-bucket/data/output.tsv.gz",
+  compress = "gzip"
+)
+}
+
+}
+\seealso{
+\code{\link{read_gsfile}}, \code{\link{upload_gsfile}},
+  \code{\link{gsfile_exists}}
 }
