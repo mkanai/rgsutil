@@ -4,7 +4,7 @@
 \alias{read_gsfile}
 \title{Read a file from Google Cloud Storage}
 \usage{
-read_gsfile(remote_path, extra_pipe_cmd = NULL, cache.dir = "/tmp", ...)
+read_gsfile(remote_path, extra_pipe_cmd = NULL, cache.dir = NULL, ...)
 }
 \arguments{
 \item{remote_path}{Character string. A Google Cloud Storage path starting with "gs://".}
@@ -13,7 +13,7 @@ read_gsfile(remote_path, extra_pipe_cmd = NULL, cache.dir = "/tmp", ...)
 before reading (e.g., "grep pattern" or "head -n 100").}
 
 \item{cache.dir}{Character string. Directory for caching downloaded files.
-Defaults to "/tmp".}
+Defaults to getOption("rgsutil.cache_dir") or a temp directory.}
 
 \item{...}{Additional arguments passed to \code{\link[data.table]{fread}}.}
 }

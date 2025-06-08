@@ -9,7 +9,7 @@ write_gsfile(
   remote_path,
   sep = "\\t",
   overwrite = FALSE,
-  cache.dir = "/tmp",
+  cache.dir = NULL,
   ...
 )
 }
@@ -26,7 +26,7 @@ Defaults to "\\t" (tab).}
 Defaults to FALSE for safety.}
 
 \item{cache.dir}{Character string. Directory for temporary local files.
-Defaults to "/tmp".}
+Defaults to getOption("rgsutil.cache_dir") or a temp directory.}
 
 \item{...}{Additional arguments passed to \code{\link[data.table]{fwrite}}.}
 }

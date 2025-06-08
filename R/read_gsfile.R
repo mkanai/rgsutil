@@ -8,7 +8,7 @@
 #' @param extra_pipe_cmd Character string. Optional shell command to pipe the file through
 #'   before reading (e.g., "grep pattern" or "head -n 100").
 #' @param cache.dir Character string. Directory for caching downloaded files.
-#'   Defaults to "/tmp".
+#'   Defaults to getOption("rgsutil.cache_dir") or a temp directory.
 #' @param ... Additional arguments passed to \code{\link[data.table]{fread}}.
 #'
 #' @return A data.frame containing the file contents.
@@ -40,8 +40,13 @@
 #'
 #' @export
 #'
-read_gsfile <- function(remote_path, extra_pipe_cmd = NULL, cache.dir = "/tmp", ...) {
-  stopifnot(startsWith(remote_path, "gs://"))
+read_gsfile <- function(remote_path, extra_pipe_cmd = NULL, cache.dir = NULL, ...) {
+  validate_gs_path(remote_path)
+
+  # Use configured cache directory if not specified
+  if (is.null(cache.dir)) {
+    cache.dir <- get_cache_dir()
+  }
 
   local_path <- file.path(cache.dir, substr(remote_path, 6, stop = .Machine$integer.max))
   if (file.exists(local_path) & !check_update(remote_path, local_path)) {

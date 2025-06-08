@@ -7,16 +7,17 @@
 list_gsfile(remote_path)
 }
 \arguments{
-\item{remote_path}{Character string. The Google Cloud Storage path to list,
-must start with "gs://". Can be a specific file, directory, or pattern.}
+\item{remote_path}{Character string or vector. Google Cloud Storage paths to list.
+Each must start with "gs://". Can be specific files, directories, patterns,
+or brace expansions.}
 }
 \value{
 Character vector of file paths found at the specified location.
   Returns an empty vector if no files are found.
 }
 \description{
-Lists files and objects at the specified Google Cloud Storage path.
-Can list both individual files and contents of directories.
+Lists files and objects at the specified Google Cloud Storage paths.
+Can list individual files, directories, patterns, or multiple paths at once.
 }
 \details{
 This function uses the \code{gcloud storage ls} command to list files.
@@ -26,6 +27,8 @@ It can be used to:
   \item List files in a directory: \code{"gs://my-bucket/data/"}
   \item Check for specific files: \code{"gs://my-bucket/data/file.csv"}
   \item Use wildcards: \code{"gs://my-bucket/data/*.csv"}
+  \item Use brace expansion: \code{"gs://my-bucket/data/file{1,2,3}.csv"}
+  \item List multiple paths: \code{c("gs://bucket1/*.csv", "gs://bucket2/*.csv")}
 }
 }
 \note{
@@ -39,6 +42,15 @@ files <- list_gsfile("gs://my-bucket/data/")
 
 # List CSV files using a pattern
 csv_files <- list_gsfile("gs://my-bucket/data/*.csv")
+
+# Use brace expansion
+monthly_files <- list_gsfile("gs://my-bucket/reports/2024-{01,02,03}.csv")
+
+# List multiple patterns at once
+all_files <- list_gsfile(c(
+  "gs://my-bucket/2023/*.csv",
+  "gs://my-bucket/2024/*.csv"
+))
 
 # Check if any files exist in a location
 if (length(list_gsfile("gs://my-bucket/output/")) == 0) {

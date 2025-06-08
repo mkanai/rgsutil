@@ -36,9 +36,12 @@
 #' @export
 #'
 check_update <- function(remote_path, local_path) {
+  validate_gs_path(remote_path)
+  gcloud_cmd <- get_gcloud_cmd()
+
   remote_dt <- as.POSIXct(
     system(
-      sprintf("gcloud storage ls -l %s | awk 'NR == 1{print $2}'", remote_path),
+      sprintf("%s storage ls -l %s | awk 'NR == 1{print $2}'", gcloud_cmd, remote_path),
       intern = TRUE
     ),
     format = "%Y-%m-%dT%H:%M",

@@ -34,10 +34,13 @@
 #' @export
 #'
 download_gsfile <- function(remote_path, dest_dir) {
+  validate_gs_path(remote_path)
+  gcloud_cmd <- get_gcloud_cmd()
+
   if (!dir.exists(dest_dir)) {
     dir.create(dest_dir, recursive = TRUE)
   }
-  cmd <- sprintf("gcloud storage cp %s %s/", remote_path, dest_dir)
+  cmd <- sprintf("%s storage cp %s %s/", gcloud_cmd, remote_path, dest_dir)
   message(sprintf("Downloading %s...", remote_path))
   message(cmd)
   system(cmd)

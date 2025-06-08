@@ -1,7 +1,7 @@
 Package: rgsutil
 Type: Package
 Title: gsutil wrapper in R
-Version: 0.2.0
+Version: 0.3.0
 Author: Masahiro Kanai
 Maintainer: Masahiro Kanai <mkanai@broadinstitute.org>
 Description: This package provides wrapper functions to call `gsutil` in R.
@@ -11,3 +11,6 @@ Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.2
 Imports: data.table
+Suggests:
+    future,
+    future.apply

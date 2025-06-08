@@ -16,13 +16,39 @@ An R package for seamless interaction with Google Cloud Storage. This package pr
 - [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) installed and authenticated
 - `bgzip` (for BGZ compression support, typically installed with htslib/samtools)
 
+## Configuration
+
+The package can be configured to handle common issues, especially on macOS with RStudio:
+
+```r
+# Show current configuration
+rgsutil_config_show()
+
+# Set custom gcloud path (common issue on macOS with RStudio)
+rgsutil_configure(gcloud_path = "/usr/local/bin/gcloud")
+# or for Homebrew on Apple Silicon
+rgsutil_configure(gcloud_path = "/opt/homebrew/bin/gcloud")
+
+# Set custom cache directory
+# Default: /tmp/rgsutil_cache (persists across R sessions, cleaned by OS)
+rgsutil_configure(cache_dir = "~/my_gcs_cache")
+
+# Set both at once
+rgsutil_configure(
+  gcloud_path = "/usr/local/bin/gcloud",
+  cache_dir = "~/.rgsutil_cache"
+)
+
+# These can also be set via options at startup (e.g., in .Rprofile)
+options(
+  rgsutil.gcloud_path = "/usr/local/bin/gcloud",
+  rgsutil.cache_dir = "~/.rgsutil_cache"
+)
+```
+
 ## Installation
 
 ```r
-# Install from GitHub
-devtools::install_github("mkanai/rgsutil")
-
-# Or using remotes
 remotes::install_github("mkanai/rgsutil")
 ```
 
@@ -50,7 +76,9 @@ files <- list_gsfile("gs://my-bucket/data/")
 
 ### Reading and Writing
 
-- `read_gsfile()` - Read files with automatic caching and update checking
+- `read_gsfile()` - Read a single file with automatic caching and update checking
+- `read_gsfiles()` - Read multiple files matching a pattern with batch optimization
+- `map_gsfiles()` - Read and process multiple files (shorthand for `read_gsfiles` with `combine="rows"`)
 - `write_gsfile()` - Write data frames with overwrite protection
 
 ### File Operations
@@ -107,22 +135,52 @@ df <- read_gsfile("gs://my-bucket/data.csv",
 ### Batch Operations
 
 ```r
-# List and process multiple files
-csv_files <- list_gsfile("gs://my-bucket/data/*.csv")
+# Read all files at once with batch downloading
+data_list <- read_gsfiles("gs://my-bucket/data/*.csv")
 
-results <- lapply(csv_files, function(file) {
-  df <- read_gsfile(file)
-  # Process each file
-  return(summary(df))
+# Read specific files
+specific_data <- read_gsfiles(c(
+  "gs://my-bucket/data/file1.csv",
+  "gs://my-bucket/data/file2.csv"
+))
+
+# Use brace expansion (like bash)
+monthly_data <- read_gsfiles(
+  "gs://my-bucket/reports/2024-{jan,feb,mar}.csv",
+  combine = "rows"
+)
+
+# Combine multiple patterns
+all_data <- read_gsfiles(
+  c("gs://my-bucket/2023/*.csv", 
+    "gs://my-bucket/2024/*.csv"),
+  combine = "rows"
+)
+
+# Process files with custom function (similar to purrr::map)
+processed <- read_gsfiles(
+  "gs://my-bucket/logs/2024-*.txt",
+  func = function(df, path) {
+    df %>%
+      mutate(source = basename(path)) %>%
+      filter(status == "ERROR")
+  },
+  combine = "rows"
+)
+
+# Or use the map_gsfiles shorthand
+results <- map_gsfiles("gs://my-bucket/data/*.csv", function(df, path) {
+  df %>% mutate(file = path)
 })
+
+# Enable parallel processing for large file sets
+# install.packages(c("future", "future.apply"))
+big_data <- read_gsfiles(
+  "gs://my-bucket/large-dataset/*.parquet",
+  parallel = TRUE,  # Use all cores
+  combine = "rows"
+)
 ```
-
-## Performance Tips
-
-1. **Use caching**: The default cache directory (`/tmp`) works well for most use cases
-2. **Leverage pipe commands**: Pre-filter large files to reduce memory usage
-3. **BGZ compression**: Use for large genomics data files to save storage and bandwidth
-4. **Batch operations**: Use `list_gsfile()` with `lapply()` for processing multiple files
 
 ## License
 
@@ -130,4 +188,4 @@ MIT License
 
 ## Author
 
-Masahiro Kanai (<mkanai@broadinstitute.org>)
+Masahiro Kanai (mkanai@broadinstitute.org)

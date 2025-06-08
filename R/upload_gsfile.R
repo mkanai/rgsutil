@@ -35,7 +35,10 @@
 #' @export
 #'
 upload_gsfile <- function(local_path, remote_path) {
-  cmd <- sprintf("gcloud storage cp %s %s", local_path, remote_path)
+  validate_gs_path(remote_path)
+  gcloud_cmd <- get_gcloud_cmd()
+
+  cmd <- sprintf("%s storage cp %s %s", gcloud_cmd, local_path, remote_path)
   message(sprintf("Uploading to %s...", remote_path))
   message(cmd)
   ret <- system(cmd)

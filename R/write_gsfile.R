@@ -12,7 +12,7 @@
 #' @param overwrite Logical. Whether to overwrite an existing remote file.
 #'   Defaults to FALSE for safety.
 #' @param cache.dir Character string. Directory for temporary local files.
-#'   Defaults to "/tmp".
+#'   Defaults to getOption("rgsutil.cache_dir") or a temp directory.
 #' @param ... Additional arguments passed to \code{\link[data.table]{fwrite}}.
 #'
 #' @return NULL (invisibly). The function is called for its side effect of
@@ -48,8 +48,13 @@
 #'   \code{\link{gsfile_exists}}
 #'
 #' @export
-write_gsfile <- function(x, remote_path, sep = "\t", overwrite = FALSE, cache.dir = "/tmp", ...) {
-  stopifnot(startsWith(remote_path, "gs://"))
+write_gsfile <- function(x, remote_path, sep = "\t", overwrite = FALSE, cache.dir = NULL, ...) {
+  validate_gs_path(remote_path)
+
+  # Use configured cache directory if not specified
+  if (is.null(cache.dir)) {
+    cache.dir <- get_cache_dir()
+  }
 
   local_path <- file.path(cache.dir, substr(remote_path, 6, stop = .Machine$integer.max))
   if (gsfile_exists(remote_path)) {
