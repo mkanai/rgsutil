@@ -4,7 +4,7 @@ Title: gsutil wrapper in R
 Version: 0.3.0
 Author: Masahiro Kanai
 Maintainer: Masahiro Kanai <mkanai@broadinstitute.org>
-Description: This package provides wrapper functions to call `gsutil` in R.
+Description: This package provides wrapper functions to call `gcloud storage` in R.
   All commands are simply executed via `system`.
 License: MIT
 Encoding: UTF-8
@@ -13,4 +13,6 @@ RoxygenNote: 7.3.2
 Imports: data.table
 Suggests:
     future,
-    future.apply
+    furrr,
+    purrr,
+    testthat (>= 3.0.0)

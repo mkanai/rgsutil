@@ -224,6 +224,11 @@ validate_gs_path <- function(path, allow_multiple = FALSE) {
   for (i in seq_along(path)) {
     p <- path[i]
 
+    # Check for empty string or NA
+    if (is.na(p) || nchar(p) == 0) {
+      stop("Google Storage path cannot be empty or NA")
+    }
+
     # Check for gs:// prefix
     if (!grepl("^gs://", p)) {
       stop(sprintf("Path must start with 'gs://': %s", p))

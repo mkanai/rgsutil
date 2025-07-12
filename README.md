@@ -78,7 +78,8 @@ files <- list_gsfile("gs://my-bucket/data/")
 
 - `read_gsfile()` - Read a single file with automatic caching and update checking
 - `read_gsfiles()` - Read multiple files matching a pattern with batch optimization
-- `map_gsfiles()` - Read and process multiple files (shorthand for `read_gsfiles` with `combine="rows"`)
+- `map_dfr_gsfiles()` - Read and process multiple files, combining rows (shorthand for `read_gsfiles` with `combine="rows"`)
+- `map_dfc_gsfiles()` - Read and process multiple files, combining columns (shorthand for `read_gsfiles` with `combine="cols"`)
 - `write_gsfile()` - Write data frames with overwrite protection
 
 ### File Operations
@@ -168,17 +169,25 @@ processed <- read_gsfiles(
   combine = "rows"
 )
 
-# Or use the map_gsfiles shorthand
-results <- map_gsfiles("gs://my-bucket/data/*.csv", function(df, path) {
+# Or use the map_dfr_gsfiles shorthand (combines rows)
+results <- map_dfr_gsfiles("gs://my-bucket/data/*.csv", function(df, path) {
   df %>% mutate(file = path)
 })
 
+# Use map_dfc_gsfiles to combine columns
+combined_cols <- map_dfc_gsfiles("gs://my-bucket/metrics/{jan,feb,mar}.csv", function(df, path) {
+  month <- gsub(".*/(\\w+)\\.csv", "\\1", path)
+  setNames(df, paste0(names(df), "_", month))
+})
+
 # Enable parallel processing for large file sets
-# install.packages(c("future", "future.apply"))
+# install.packages(c("furrr", "future"))  # For parallel with progress bar
+# install.packages("purrr")               # For sequential with progress bar
 big_data <- read_gsfiles(
   "gs://my-bucket/large-dataset/*.parquet",
   parallel = TRUE,  # Use all cores
-  combine = "rows"
+  combine = "rows",
+  .progress = TRUE  # Show progress bar
 )
 ```
 

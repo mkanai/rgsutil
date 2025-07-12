@@ -2,7 +2,8 @@
 % Please edit documentation in R/read_gsfiles.R
 \name{read_gsfiles}
 \alias{read_gsfiles}
-\alias{map_gsfiles}
+\alias{map_dfr_gsfiles}
+\alias{map_dfc_gsfiles}
 \title{Read multiple files from Google Cloud Storage}
 \usage{
 read_gsfiles(
@@ -15,7 +16,9 @@ read_gsfiles(
   ...
 )
 
-map_gsfiles(remote_pattern, func, ...)
+map_dfr_gsfiles(remote_pattern, func, ...)
+
+map_dfc_gsfiles(remote_pattern, func, ...)
 }
 \arguments{
 \item{remote_pattern}{Character string or vector. Google Cloud Storage paths or patterns
@@ -28,7 +31,9 @@ starting with "gs://". Accepts:
 }}
 
 \item{func}{Function. Optional function to apply to each file after reading.
-Receives the data frame and file path as arguments. If NULL, returns raw data frames.}
+Must accept two arguments: \code{df} (the data frame) and \code{path} (the GS file path).
+Example: \code{function(df, path) \{ df$source <- basename(path); return(df) \}}.
+If NULL, returns raw data frames.}
 
 \item{combine}{Character string. How to combine results: "none" (list),
 "rows" (rbind), or "cols" (cbind). Defaults to "none".}
@@ -65,13 +70,16 @@ This function optimizes reading multiple files by:
   \item Combining results based on the specified method
 }
 
-The \code{func} parameter allows custom processing of each file. It receives
-two arguments: the data frame and the file path. This is useful for adding
-metadata or filtering data.
+The \code{func} parameter allows custom processing of each file. The function
+must accept exactly two arguments: \code{df} (the data frame read from the file)
+and \code{path} (the full GS path of the file, e.g., "gs://bucket/file.csv").
+The function should return a data frame. This is useful for adding metadata,
+filtering data, or extracting information from the file path.
 
-When \code{parallel = TRUE}, the package will attempt to use the future
-package for parallel reading if available. Install \code{future} and
-\code{future.apply} packages to enable this feature.
+When \code{parallel = TRUE}, the package will use the \code{furrr}
+package for parallel reading. Install \code{furrr} and \code{future}
+packages to enable parallel processing. For sequential processing with
+progress bars, install the \code{purrr} package.
 }
 \examples{
 \dontrun{
@@ -134,7 +142,7 @@ variants <- read_gsfiles(
 )
 
 # Use parallel processing for faster reading
-# Requires: install.packages(c("future", "future.apply"))
+# Requires: install.packages(c("furrr", "future"))
 large_dataset <- read_gsfiles(
   "gs://my-bucket/big-data/*.parquet",
   parallel = TRUE, # Use all available cores

@@ -12,7 +12,9 @@
 #'     \item Mixed patterns: \code{c("gs://bucket/2023/*.csv", "gs://bucket/2024/*.csv")}
 #'   }
 #' @param func Function. Optional function to apply to each file after reading.
-#'   Receives the data frame and file path as arguments. If NULL, returns raw data frames.
+#'   Must accept two arguments: \code{df} (the data frame) and \code{path} (the GS file path).
+#'   Example: \code{function(df, path) \{ df$source <- basename(path); return(df) \}}.
+#'   If NULL, returns raw data frames.
 #' @param combine Character string. How to combine results: "none" (list),
 #'   "rows" (rbind), or "cols" (cbind). Defaults to "none".
 #' @param cache.dir Character string. Directory for caching downloaded files.
@@ -39,13 +41,16 @@
 #'   \item Combining results based on the specified method
 #' }
 #'
-#' The \code{func} parameter allows custom processing of each file. It receives
-#' two arguments: the data frame and the file path. This is useful for adding
-#' metadata or filtering data.
+#' The \code{func} parameter allows custom processing of each file. The function
+#' must accept exactly two arguments: \code{df} (the data frame read from the file)
+#' and \code{path} (the full GS path of the file, e.g., "gs://bucket/file.csv").
+#' The function should return a data frame. This is useful for adding metadata,
+#' filtering data, or extracting information from the file path.
 #'
-#' When \code{parallel = TRUE}, the package will attempt to use the future
-#' package for parallel reading if available. Install \code{future} and
-#' \code{future.apply} packages to enable this feature.
+#' When \code{parallel = TRUE}, the package will use the \code{furrr}
+#' package for parallel reading. Install \code{furrr} and \code{future}
+#' packages to enable parallel processing. For sequential processing with
+#' progress bars, install the \code{purrr} package.
 #'
 #' @examples
 #' \dontrun{
@@ -108,7 +113,7 @@
 #' )
 #'
 #' # Use parallel processing for faster reading
-#' # Requires: install.packages(c("future", "future.apply"))
+#' # Requires: install.packages(c("furrr", "future"))
 #' large_dataset <- read_gsfiles(
 #'   "gs://my-bucket/big-data/*.parquet",
 #'   parallel = TRUE, # Use all available cores
@@ -315,9 +320,9 @@ read_gsfiles <- function(remote_pattern,
   # Check if parallel processing is requested
   use_parallel <- FALSE
   if (!isFALSE(parallel)) {
-    # Check if future is available
-    if (requireNamespace("future", quietly = TRUE) &&
-      requireNamespace("future.apply", quietly = TRUE)) {
+    # Check if furrr is available for parallel processing
+    if (requireNamespace("furrr", quietly = TRUE) &&
+      requireNamespace("future", quietly = TRUE)) {
       use_parallel <- TRUE
 
       # Set up future plan
@@ -339,17 +344,13 @@ read_gsfiles <- function(remote_pattern,
       }
     } else {
       if (.progress) {
-        message("Note: Install 'future' and 'future.apply' packages for parallel processing")
+        message("Note: Install 'furrr' and 'future' packages for parallel processing")
       }
     }
   }
 
   # Function to read and process a single file
   read_single_file <- function(i) {
-    if (!use_parallel && .progress && length(remote_files) > 10 && i %% 10 == 0) {
-      message(sprintf("  Reading file %d/%d", i, length(remote_files)))
-    }
-
     df <- tryCatch(
       {
         # Always read from local cache (we've already downloaded all files)
@@ -377,14 +378,24 @@ read_gsfiles <- function(remote_pattern,
 
   # Read files either in parallel or sequentially
   if (use_parallel) {
-    results <- future.apply::future_lapply(
+    # Use furrr for parallel processing with progress bar
+    results <- furrr::future_map(
       seq_along(remote_files),
       read_single_file,
-      future.seed = TRUE
+      .progress = .progress,
+      .options = furrr::furrr_options(seed = TRUE)
     )
     # Reset future plan
     future::plan(future::sequential)
+  } else if (requireNamespace("purrr", quietly = TRUE)) {
+    # Use purrr for sequential processing with progress bar
+    results <- purrr::map(
+      seq_along(remote_files),
+      read_single_file,
+      .progress = .progress
+    )
   } else {
+    # Fall back to base R lapply without progress bar
     results <- lapply(seq_along(remote_files), read_single_file)
   }
 
@@ -393,7 +404,9 @@ read_gsfiles <- function(remote_pattern,
   # Combine results if requested
   if (combine == "rows") {
     if (.progress) message("Combining rows...")
-    return(do.call(rbind, results))
+    combined <- do.call(rbind, results)
+    rownames(combined) <- NULL
+    return(combined)
   } else if (combine == "cols") {
     if (.progress) message("Combining columns...")
     return(do.call(cbind, results))
@@ -404,6 +417,12 @@ read_gsfiles <- function(remote_pattern,
 
 #' @rdname read_gsfiles
 #' @export
-map_gsfiles <- function(remote_pattern, func, ...) {
+map_dfr_gsfiles <- function(remote_pattern, func, ...) {
   read_gsfiles(remote_pattern, func = func, combine = "rows", ...)
+}
+
+#' @rdname read_gsfiles
+#' @export
+map_dfc_gsfiles <- function(remote_pattern, func, ...) {
+  read_gsfiles(remote_pattern, func = func, combine = "cols", ...)
 }
