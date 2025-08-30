@@ -22,6 +22,9 @@
 #' @param parallel Logical or integer. Whether to read files in parallel using future.
 #'   If TRUE, uses all available cores. If integer, uses that many cores. Defaults to FALSE.
 #' @param .progress Logical. Whether to show progress messages. Defaults to TRUE.
+#' @param update_check_threshold Integer. Number of files above which update checks are skipped
+#'   for performance (re-downloading all files is typically faster than checking many files).
+#'   Defaults to 100. Set to \code{Inf} to always check for updates, or \code{0} to always skip checks.
 #' @param ... Additional arguments passed to \code{\link{fread_wrapper}} for each file.
 #'
 #' @return Depending on the \code{combine} parameter:
@@ -35,7 +38,8 @@
 #' This function optimizes reading multiple files by:
 #' \enumerate{
 #'   \item Listing all files matching the patterns using gcloud's native pattern expansion
-#'   \item Checking which files need updating (if cached)
+#'   \item Checking which files need updating (if cached) - skipped when file count exceeds
+#'         the \code{update_check_threshold} parameter for performance
 #'   \item Batch downloading all required files using gcloud's native parallel support
 #'   \item Reading and optionally processing each file (optionally in parallel)
 #'   \item Combining results based on the specified method
@@ -51,6 +55,12 @@
 #' package for parallel reading. Install \code{furrr} and \code{future}
 #' packages to enable parallel processing. For sequential processing with
 #' progress bars, install the \code{purrr} package.
+#'
+#' For performance optimization with large file sets, the function
+#' automatically skips individual update checks when the number of files
+#' exceeds \code{update_check_threshold} and re-downloads all files instead.
+#' This is typically faster as checking timestamps for many files individually
+#' can be slower than batch downloading.
 #'
 #' @examples
 #' \dontrun{
@@ -131,6 +141,20 @@
 #'       summarise(mean_value = mean(value, na.rm = TRUE))
 #'   }
 #' )
+#'
+#' # For many files, skip update checks for better performance
+#' large_dataset <- read_gsfiles(
+#'   "gs://my-bucket/thousands-of-files/*.csv",
+#'   update_check_threshold = 50, # Skip checks if >50 files
+#'   combine = "rows"
+#' )
+#'
+#' # Always check for updates regardless of file count
+#' always_check <- read_gsfiles(
+#'   "gs://my-bucket/data/*.csv",
+#'   update_check_threshold = Inf, # Always check
+#'   combine = "rows"
+#' )
 #' }
 #'
 #' @seealso \code{\link{read_gsfile}}, \code{\link{list_gsfile}}
@@ -142,6 +166,7 @@ read_gsfiles <- function(remote_pattern,
                          cache.dir = NULL,
                          parallel = FALSE,
                          .progress = TRUE,
+                         update_check_threshold = 100,
                          ...) {
   combine <- match.arg(combine)
 
@@ -182,24 +207,38 @@ read_gsfiles <- function(remote_pattern,
   files_to_download <- character()
   files_to_download_indices <- integer()
 
-  for (i in seq_along(remote_files)) {
-    if (!file.exists(local_paths[i])) {
-      files_to_download <- c(files_to_download, remote_files[i])
-      files_to_download_indices <- c(files_to_download_indices, i)
-    } else {
-      # Check if update needed
-      update_needed <- tryCatch(
-        {
-          check_update(remote_files[i], local_paths[i])
-        },
-        error = function(e) {
-          TRUE # If check fails, assume update needed
-        }
-      )
-
-      if (update_needed) {
+  # Skip update checks if we have too many files (re-downloading is faster)
+  if (length(remote_files) > update_check_threshold) {
+    if (.progress) {
+      message(sprintf(
+        "Skipping update checks for %d files (threshold: %d). Re-downloading all files.",
+        length(remote_files), update_check_threshold
+      ))
+    }
+    # Mark all files for download
+    files_to_download <- remote_files
+    files_to_download_indices <- seq_along(remote_files)
+  } else {
+    # Perform update checks for smaller file sets
+    for (i in seq_along(remote_files)) {
+      if (!file.exists(local_paths[i])) {
         files_to_download <- c(files_to_download, remote_files[i])
         files_to_download_indices <- c(files_to_download_indices, i)
+      } else {
+        # Check if update needed
+        update_needed <- tryCatch(
+          {
+            check_update(remote_files[i], local_paths[i])
+          },
+          error = function(e) {
+            TRUE # If check fails, assume update needed
+          }
+        )
+
+        if (update_needed) {
+          files_to_download <- c(files_to_download, remote_files[i])
+          files_to_download_indices <- c(files_to_download_indices, i)
+        }
       }
     }
   }

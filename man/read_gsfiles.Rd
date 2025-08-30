@@ -13,6 +13,7 @@ read_gsfiles(
   cache.dir = NULL,
   parallel = FALSE,
   .progress = TRUE,
+  update_check_threshold = 100,
   ...
 )
 
@@ -46,6 +47,10 @@ If TRUE, uses all available cores. If integer, uses that many cores. Defaults to
 
 \item{.progress}{Logical. Whether to show progress messages. Defaults to TRUE.}
 
+\item{update_check_threshold}{Integer. Number of files above which update checks are skipped
+for performance (re-downloading all files is typically faster than checking many files).
+Defaults to 100. Set to \code{Inf} to always check for updates, or \code{0} to always skip checks.}
+
 \item{...}{Additional arguments passed to \code{\link{fread_wrapper}} for each file.}
 }
 \value{
@@ -64,7 +69,8 @@ Optimizes performance by batch downloading files before reading.
 This function optimizes reading multiple files by:
 \enumerate{
   \item Listing all files matching the patterns using gcloud's native pattern expansion
-  \item Checking which files need updating (if cached)
+  \item Checking which files need updating (if cached) - skipped when file count exceeds
+        the \code{update_check_threshold} parameter for performance
   \item Batch downloading all required files using gcloud's native parallel support
   \item Reading and optionally processing each file (optionally in parallel)
   \item Combining results based on the specified method
@@ -80,6 +86,12 @@ When \code{parallel = TRUE}, the package will use the \code{furrr}
 package for parallel reading. Install \code{furrr} and \code{future}
 packages to enable parallel processing. For sequential processing with
 progress bars, install the \code{purrr} package.
+
+For performance optimization with large file sets, the function
+automatically skips individual update checks when the number of files
+exceeds \code{update_check_threshold} and re-downloads all files instead.
+This is typically faster as checking timestamps for many files individually
+can be slower than batch downloading.
 }
 \examples{
 \dontrun{
@@ -159,6 +171,20 @@ results <- read_gsfiles(
       group_by(category) \%>\%
       summarise(mean_value = mean(value, na.rm = TRUE))
   }
+)
+
+# For many files, skip update checks for better performance
+large_dataset <- read_gsfiles(
+  "gs://my-bucket/thousands-of-files/*.csv",
+  update_check_threshold = 50, # Skip checks if >50 files
+  combine = "rows"
+)
+
+# Always check for updates regardless of file count
+always_check <- read_gsfiles(
+  "gs://my-bucket/data/*.csv",
+  update_check_threshold = Inf, # Always check
+  combine = "rows"
 )
 }
 
